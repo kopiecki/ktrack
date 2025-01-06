@@ -1,0 +1,39 @@
+---
+Checks: 'clang-diagnostic-*,
+        clang-analyzer-*,
+        cppcoreguidelines-*,
+        readability-*,
+        -readability-redundant-access-specifiers,
+        -readability-braces-around-statements,
+        bugprone-*,
+        modernize-*,
+        -modernize-use-nodiscard,
+        -modernize-use-trailing-return-type,
+        performance-*,
+        llvm-*,
+        google-*,
+        -google-readability-braces-around-statements'
+        -google-objc-*
+CheckOptions:
+  - key:   readability-identifier-naming.ClassCase
+    value: lower_case
+  - key:   readability-identifier-naming.EnumCase
+    value: lower_case
+  - key:   readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key:   readability-identifier-naming.MemberCase
+    value: lower_case
+  - key:   readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key:   readability-identifier-naming.UnionCase
+    value: lower_case
+  - key:   readability-identifier-naming.VariableCase
+    value: lower_case
+  - key:   readability-identifier-length.MinimumVariableNameLength
+    value: 1
+  - key:   readability-identifier-length.MinimumParameterNameLength
+    value: 1
+
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     none
