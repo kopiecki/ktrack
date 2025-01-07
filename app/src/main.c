@@ -5,11 +5,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <stdio.h>
+#include "engine.h"
+
+static struct engine e;
 
 int main(void)
 {
-	printf("Hello!\n");
+	int err = engine_init(&e, "ktrack", vec2_create(100, 100));
+	if (err < 0)
+		goto destroy;
+
+	while (1) {
+		engine_render(&e);
+	}
+
+destroy:
+	engine_destroy(&e);
+
 	return 0;
 }
 

@@ -8,34 +8,59 @@
 #include "engine.h"
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_error.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_log.h>
 #include <SDL2/SDL_mouse.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
 #include <assert.h>
-#include <cerrno>
 #include <errno.h>
+#include <stdarg.h>
 
-static inline int render_color(SDL_Renderer* const r, const struct rgba* const col)
+void log_err(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+
+	SDL_LogError(SDL_LOG_CATEGORY_ERROR, fmt, args);
+
+	va_end(args);
+}
+
+void log_info(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+
+	SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, fmt, args);
+
+	va_end(args);
+}
+
+static inline int set_render_color(SDL_Renderer* const r, const SDL_Color* const col)
 {
 	assert(r != NULL);
 	assert(col != NULL);
 
-	return SDL_SetRenderDrawColor(r, col->r, col->g, col->b, col->a);
+	const int err = SDL_SetRenderDrawColor(r, col->r, col->g, col->b, col->a);
+	if (err < 0)
+		log_err("Could not set color [%s]", SDL_GetError());
+
+	return err;
 }
 
 static inline int clear(SDL_Renderer* const r)
 {
 	assert(r != NULL);
 
-	return SDL_RenderClear(r);
-}
+	const int err = SDL_RenderClear(r);
+	if (err < 0)
+		log_err("Could not clear render [%s]", SDL_GetError());
 
-static inline void render(SDL_Renderer* const r)
-{
-	assert(r != NULL);
-
-	SDL_RenderPresent(r);
+	return err;
 }
 
 int engine_init(struct engine* const e, const char* name, struct vec2 size)
@@ -43,12 +68,16 @@ int engine_init(struct engine* const e, const char* name, struct vec2 size)
 	assert(name != NULL);
 
 	int err = SDL_Init(SDL_INIT_VIDEO);
-	if (err < 0)
+	if (err < 0) {
+		log_err("Could not init SDL [%s]", SDL_GetError());
 		return err;
+	}
 
 	err = TTF_Init();
-	if (err < 0)
+	if (err < 0) {
+		log_err("Could not init TTF [%s]", SDL_GetError());
 		return err;
+	}
 
 	e->win = SDL_CreateWindow(
 		name,
@@ -57,12 +86,28 @@ int engine_init(struct engine* const e, const char* name, struct vec2 size)
 		size.x,
 		size.y,
 		SDL_WINDOW_SHOWN);
-	if (e->win == NULL)
+	if (e->win == NULL) {
+		log_err("Could not create window [%s]", SDL_GetError());
 		return -ENOMEM;
+	}
 
 	e->rndr = SDL_CreateRenderer(e->win, -1, SDL_RENDERER_ACCELERATED);
-	if (e->rndr)
+	if (e->rndr == NULL) {
+		log_err("Could not create renderer [%s]", SDL_GetError());
 		return -ENOMEM;
+	}
+
+	err = set_render_color(e->rndr, &e->bg_col);
+	if (err < 0)
+		return err;
+
+	err = clear(e->rndr);
+	if (err < 0)
+		return err;
+
+	log_info("Initialized SDL backend");
+
+	return err;
 }
 
 void engine_destroy(struct engine* const e)
@@ -77,11 +122,47 @@ int engine_draw_rect(struct engine* const e, const struct rect* const r)
 	assert(e != NULL);
 	assert(r != NULL);
 
-	const int err = render_color(e->rndr, &r->col);
+	int err = set_render_color(e->rndr, &r->col);
 	if (err < 0)
 		return err;
 
-	return SDL_RenderFillRect(e->rndr, &r->dim);
+	err = SDL_RenderFillRect(e->rndr, &r->dim);
+	if (err < 0) {
+		log_err("Could not fill rect [%s]", SDL_GetError());
+		return err;
+	}
+
+	return 0;
+}
+
+int engine_draw_text(struct engine* const e, struct text* const t)
+{
+	assert(e != NULL);
+	assert(t != NULL);
+
+	TTF_Font* const font = TTF_OpenFont(t->font, t->size);
+	if (font == NULL) {
+		log_err("Could not open font [%s]", SDL_GetError());
+		return -ENOMEM;
+	}
+
+	SDL_Surface* const surf = TTF_RenderText_Solid(font, t->msg, t->col);
+	if (surf == NULL) {
+		log_err("Could not open surf [%s]", SDL_GetError());
+		return -ENOMEM;
+	}
+
+	SDL_Texture* const texture = SDL_CreateTextureFromSurface(e->rndr, surf);
+	if (texture == NULL) {
+		log_err("Could not create texture from surface [%s]", SDL_GetError());
+		return -ENOMEM;
+	}
+
+	int err = SDL_QueryTexture(texture, NULL, NULL, &t->dim.w, &t->dim.h);
+	if (err < 0)
+		log_err("Could not query texture for size [%s]", SDL_GetError());
+
+	return err;
 }
 
 void engine_wait(u32 ms)
@@ -117,6 +198,13 @@ int engine_poll_key(struct engine* const e, SDL_KeyCode* const key)
 	}
 
 	return -ENODATA;
+}
+
+void engine_render(struct engine* const e)
+{
+	assert(e != NULL);
+
+	SDL_RenderPresent(e->rndr);
 }
 
 /**** END OF FILE ****/

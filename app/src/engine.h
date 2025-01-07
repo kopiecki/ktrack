@@ -9,6 +9,8 @@
 #define ENGINE_H_INCLUDED_
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -41,29 +43,45 @@ static inline bool vec2_eq(const struct vec2 lhs, const struct vec2 rhs)
 	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
 }
 
-struct rgba {
-	u8 r;
-	u8 g;
-	u8 b;
-	u8 a;
-};
-
 struct rect {
 	SDL_Rect dim;
-	struct rgba col;
+	SDL_Color col;
+};
+
+struct text {
+	SDL_Rect dim;
+	const char* msg;
+	const char* font;
+	SDL_Color col;
+	u32 size;
+};
+
+static const SDL_Color color_blue = {
+	.r = 0,
+	.g = 17,
+	.b = 51,
+	.a = 0,
 };
 
 struct engine {
 	SDL_Window* win;
 	SDL_Renderer* rndr;
+	SDL_Color bg_col;
 };
 
 int engine_init(struct engine* const e, const char* name, struct vec2 size);
 void engine_destroy(struct engine* const e);
 
 int engine_poll_mouse(struct engine* const e, struct vec2* const corr);
+int engine_poll_key(struct engine* const e, SDL_KeyCode* const key);
 
 int engine_draw_rect(struct engine* const e, const struct rect* const r);
+int engine_draw_text(struct engine* const e, struct text* const t);
+
+int engine_set_render_color(struct engine* const e, const SDL_Color* const col);
+int engine_clear(struct engine* const e);
+
+void engine_render(struct engine* const e);
 void engine_wait(u32 ms);
 
 #endif /* ENGINE_H_INCLUDED_ */
