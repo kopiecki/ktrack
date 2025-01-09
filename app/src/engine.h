@@ -12,6 +12,7 @@
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_rect.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -72,13 +73,13 @@ struct engine {
 int engine_init(struct engine* const e, const char* name, struct vec2 size);
 void engine_destroy(struct engine* const e);
 
-int engine_poll_mouse(struct engine* const e, struct vec2* const corr);
-int engine_poll_key(struct engine* const e, SDL_KeyCode* const key);
+struct vec2 engine_poll_mouse(struct engine* const e, const atomic_bool* const quit);
+SDL_KeyCode engine_poll_key(struct engine* const e, const atomic_bool* const quit);
 
 int engine_draw_rect(struct engine* const e, const struct rect* const r);
 int engine_draw_text(struct engine* const e, struct text* const t);
 
-int engine_set_render_color(struct engine* const e, const SDL_Color* const col);
+int engine_set_background(struct engine* const e, const SDL_Color* const col);
 int engine_clear(struct engine* const e);
 
 void engine_render(struct engine* const e);

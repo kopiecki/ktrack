@@ -115,6 +115,8 @@ void engine_destroy(struct engine* const e)
 	SDL_DestroyWindow(e->win);
 	SDL_DestroyRenderer(e->rndr);
 	SDL_Quit();
+
+	log_info("Deinitialized SDL backend");
 }
 
 int engine_draw_rect(struct engine* const e, const struct rect* const r)
@@ -170,34 +172,48 @@ void engine_wait(u32 ms)
 	SDL_Delay(ms);
 }
 
-int engine_poll_mouse(struct engine* const e, struct vec2* const corr)
+struct vec2 engine_poll_mouse(struct engine* const e, const atomic_bool* const quit)
 {
 	assert(e != NULL);
 
 	SDL_Event ev;
+	int pending = 0;
 
-	const int pending = SDL_PollEvent(&ev);
-	if ((pending != 0) && (ev.type == SDL_BUTTON_LEFT)) {
-		*corr = vec2_create(ev.motion.x, ev.motion.y);
-		return 0;
+	while (!*quit) {
+		pending = SDL_PollEvent(&ev);
+		if (pending && (ev.type == SDL_MOUSEBUTTONDOWN))
+			return vec2_create(ev.motion.x, ev.motion.y);
 	}
 
-	return -ENODATA;
+	return vec2_create(-1, -1);
 }
 
-int engine_poll_key(struct engine* const e, SDL_KeyCode* const key)
+SDL_KeyCode engine_poll_key(struct engine* const e, const atomic_bool* const quit)
 {
 	assert(e != NULL);
 
 	SDL_Event ev;
+	int pending = 0;
 
-	const int pending = SDL_PollEvent(&ev);
-	if ((pending != 0) && (ev.type == SDL_KEYDOWN)) {
-		*key = ev.key.keysym.sym;
-		return 0;
+	while (!*quit) {
+		pending = SDL_PollEvent(&ev);
+		if (pending && (ev.type == SDL_KEYDOWN))
+			return ev.key.keysym.sym;
 	}
 
-	return -ENODATA;
+	return SDLK_UNKNOWN;
+}
+
+int engine_set_background(struct engine* const e, const SDL_Color* const col)
+{
+	assert(e != NULL);
+	assert(col != NULL);
+
+	const int err = set_render_color(e->rndr, col);
+	if (err < 0)
+		return err;
+
+	return clear(e->rndr);
 }
 
 void engine_render(struct engine* const e)
