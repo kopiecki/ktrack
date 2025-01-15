@@ -10,17 +10,19 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
 #include <SDL2/SDL_events.h>
-#include <SDL2/SDL_keycode.h>
-#include <SDL2/SDL_log.h>
 #include <SDL2/SDL_mouse.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_ttf.h>
 #include <assert.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdarg.h>
 
-void log_err(const char* fmt, ...)
+#define UNUSED(v)     (void)(v)
+#define ARR_SIZE(arr) (sizeof((arr)) / sizeof((arr)[0]))
+
+static atomic_bool quit = false;
+
+static void log_err(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -30,7 +32,7 @@ void log_err(const char* fmt, ...)
 	va_end(args);
 }
 
-void log_info(const char* fmt, ...)
+static void log_info(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -52,18 +54,33 @@ static inline int set_render_color(SDL_Renderer* const r, const SDL_Color* const
 	return err;
 }
 
-static inline int clear(SDL_Renderer* const r)
+int engine_clear(struct engine* const e)
 {
-	assert(r != NULL);
+	assert(e != NULL);
 
-	const int err = SDL_RenderClear(r);
+	const int err = SDL_RenderClear(e->rndr);
 	if (err < 0)
 		log_err("Could not clear render [%s]", SDL_GetError());
 
 	return err;
 }
 
-int engine_init(struct engine* const e, const char* name, struct vec2 size)
+static inline SDL_KeyCode key_from_ev(const SDL_Event* const ev)
+{
+	return ev->key.keysym.sym;
+}
+
+static inline struct vec2 vec_from_ev(const SDL_Event* const ev)
+{
+	return vec2_create(ev->motion.x, ev->motion.y);
+}
+
+int engine_init(
+	struct engine* const e,
+	const char* name,
+	struct vec2 size,
+	const SDL_Color* const bg_col,
+	const struct engine_ops* const ops)
 {
 	assert(name != NULL);
 
@@ -101,9 +118,17 @@ int engine_init(struct engine* const e, const char* name, struct vec2 size)
 	if (err < 0)
 		return err;
 
-	err = clear(e->rndr);
+	err = engine_clear(e);
 	if (err < 0)
 		return err;
+
+	if (ops == NULL) {
+		log_err("SDL backend requires event handler structure");
+		return -ENODATA;
+	}
+
+	e->ops    = *ops;
+	e->bg_col = *bg_col;
 
 	log_info("Initialized SDL backend");
 
@@ -161,8 +186,14 @@ int engine_draw_text(struct engine* const e, struct text* const t)
 	}
 
 	int err = SDL_QueryTexture(texture, NULL, NULL, &t->dim.w, &t->dim.h);
-	if (err < 0)
+	if (err < 0) {
 		log_err("Could not query texture for size [%s]", SDL_GetError());
+		return err;
+	}
+
+	err = SDL_RenderCopy(e->rndr, texture, NULL, &t->dim);
+	if (err < 0)
+		log_err("Could not copy texture [%s]", SDL_GetError());
 
 	return err;
 }
@@ -172,36 +203,28 @@ void engine_wait(u32 ms)
 	SDL_Delay(ms);
 }
 
-struct vec2 engine_poll_mouse(struct engine* const e, const atomic_bool* const quit)
+static inline bool is_running(struct engine* const e)
 {
-	assert(e != NULL);
-
-	SDL_Event ev;
-	int pending = 0;
-
-	while (!*quit) {
-		pending = SDL_PollEvent(&ev);
-		if (pending && (ev.type == SDL_MOUSEBUTTONDOWN))
-			return vec2_create(ev.motion.x, ev.motion.y);
-	}
-
-	return vec2_create(-1, -1);
+	return !quit && e->running;
 }
 
-SDL_KeyCode engine_poll_key(struct engine* const e, const atomic_bool* const quit)
+int engine_poll_event(struct engine* const e)
 {
 	assert(e != NULL);
 
-	SDL_Event ev;
-	int pending = 0;
-
-	while (!*quit) {
-		pending = SDL_PollEvent(&ev);
-		if (pending && (ev.type == SDL_KEYDOWN))
-			return ev.key.keysym.sym;
+	while (SDL_PollEvent(&e->ev)) {
+		if (e->ev.type == SDL_KEYDOWN) {
+			const int err = e->ops.on_key_press(e, key_from_ev(&e->ev));
+			if (err < 0)
+				return err;
+		} else if ((e->ev.type == SDL_MOUSEMOTION) && (e->ev.button.button == SDL_BUTTON_LEFT)) {
+			const int err = e->ops.on_mouse_press(e, vec_from_ev(&e->ev));
+			if (err < 0)
+				return err;
+		}
 	}
 
-	return SDLK_UNKNOWN;
+	return 0;
 }
 
 int engine_set_background(struct engine* const e, const SDL_Color* const col)
@@ -213,14 +236,72 @@ int engine_set_background(struct engine* const e, const SDL_Color* const col)
 	if (err < 0)
 		return err;
 
-	return clear(e->rndr);
+	return engine_clear(e);
 }
 
-void engine_render(struct engine* const e)
+int engine_render(struct engine* const e)
 {
 	assert(e != NULL);
 
+	int err = engine_set_background(e, &e->bg_col);
+	if (err < 0)
+		return err;
+
+	err = e->ops.on_render(e);
+	if (err < 0)
+		return err;
+
 	SDL_RenderPresent(e->rndr);
+
+	return 0;
+}
+
+static void quit_handler(int signo)
+{
+	UNUSED(signo);
+
+	quit = true;
+}
+
+static int quit_handler_init(void)
+{
+	static struct sigaction sa;
+	sa.sa_handler = quit_handler;
+
+	int err = sigfillset(&sa.sa_mask);
+	if (err < 0)
+		return err;
+
+	const int sigs[] = { SIGINT, SIGTERM };
+	for (int i = 0; i < ARR_SIZE(sigs); i++) {
+		err = sigaction(sigs[i], &sa, NULL);
+		if (err < 0)
+			return err;
+	}
+
+	return 0;
+}
+
+int engine_run(struct engine* const e)
+{
+	assert(e != NULL);
+
+	quit_handler_init();
+	e->running = true;
+
+	while (is_running(e)) {
+		int err = engine_render(e);
+		if (err < 0)
+			return err;
+
+		err = engine_poll_event(e);
+		if (err < 0)
+			return err;
+
+		engine_wait(25);
+	}
+
+	return 0;
 }
 
 /**** END OF FILE ****/

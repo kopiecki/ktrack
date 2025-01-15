@@ -3,7 +3,7 @@ cores     := $(shell nproc)
 root_dir  := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 build_dir := _build
 bin_dir   := $(build_dir)/app
-debug     ?= y
+debug     ?= n
 top       := $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
 
 cmake_conf_flags += -DPROJECT_NAME=$(project)
