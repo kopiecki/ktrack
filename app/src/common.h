@@ -22,11 +22,13 @@ struct vec2 {
 	i32 y;
 };
 
-#define vec2_create(x, y)                                                      \
-	(struct vec2)                                                              \
-	{                                                                          \
-		(x), (y)                                                               \
-	}
+static inline struct vec2 vec2_create(i32 x, i32 y)
+{
+	return (struct vec2) {
+		.x = x,
+		.y = y,
+	};
+}
 
 static inline struct vec2 vec2_add_v(const struct vec2 lhs, const struct vec2 rhs)
 {

@@ -1,17 +1,16 @@
 /*
- * @file   noise.c
+ * @file   rng.c
  *
  * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
  * SPDX-License-Identifier: MIT
  */
 
-#include "noise.h"
+#include "rng.h"
 
 #include <assert.h>
 #include <gsl/gsl_randist.h>
-#include <gsl/gsl_rng.h>
 
-int noise_init(struct noise* const n, double stddev)
+int rng_gauss_init(struct rng_gauss* const n, double stddev, double mean)
 {
 	assert(n != NULL);
 
@@ -20,20 +19,21 @@ int noise_init(struct noise* const n, double stddev)
 		return -ENOMEM;
 
 	n->stddev = stddev;
+	n->mean   = mean;
 
 	return 0;
 }
 
-void noise_destroy(struct noise* const n)
+void rng_gauss_destroy(struct rng_gauss* const n)
 {
 	assert(n != NULL);
 
 	gsl_rng_free(n->rng);
 }
 
-double noise_get(struct noise* const n)
+double rng_gauss_get(const struct rng_gauss* const n)
 {
-	return gsl_ran_gaussian(n->rng, n->stddev);
+	return gsl_ran_gaussian(n->rng, n->stddev) + n->mean;
 }
 
 /**** END OF FILE ****/

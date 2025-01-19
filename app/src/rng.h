@@ -1,5 +1,5 @@
 /*
- * @file   noise.h
+ * @file   rng.h
  *
  * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
  * SPDX-License-Identifier: MIT
@@ -10,15 +10,16 @@
 
 #include <gsl/gsl_rng.h>
 
-struct noise {
-	double stddev;
+struct rng_gauss {
 	gsl_rng* rng;
+	double stddev;
+	double mean;
 };
 
-int noise_init(struct noise* const n, double stddev);
-void noise_destroy(struct noise* const n);
+int rng_gauss_init(struct rng_gauss* const n, double stddev, double mean);
+void rng_gauss_destroy(struct rng_gauss* const n);
 
-double noise_get(struct noise* const n);
+double rng_gauss_get(const struct rng_gauss* const n);
 
 #endif /* NOISE_H_INCLUDED_ */
 

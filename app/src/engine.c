@@ -8,7 +8,6 @@
 #include "engine.h"
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_error.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_ttf.h>
@@ -18,28 +17,39 @@
 #include <stdarg.h>
 
 #define UNUSED(v)     (void)(v)
-#define ARR_SIZE(arr) (sizeof((arr)) / sizeof((arr)[0]))
+#define ARR_SIZE(arr) (int)(sizeof((arr)) / sizeof((arr)[0]))
 
 static atomic_bool quit = false;
 
-static void log_err(const char* fmt, ...)
+static void quit_handler(int signo)
 {
-	va_list args;
-	va_start(args, fmt);
+	UNUSED(signo);
 
-	SDL_LogError(SDL_LOG_CATEGORY_ERROR, fmt, args);
-
-	va_end(args);
+	quit = true;
 }
 
-static void log_info(const char* fmt, ...)
+static int quit_handler_init(void)
 {
-	va_list args;
-	va_start(args, fmt);
+	static struct sigaction sa;
+	sa.sa_handler = quit_handler;
 
-	SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, fmt, args);
+	int err = sigfillset(&sa.sa_mask);
+	if (err < 0)
+		return err;
 
-	va_end(args);
+	const int sigs[] = { SIGINT, SIGTERM };
+	for (int i = 0; i < ARR_SIZE(sigs); i++) {
+		err = sigaction(sigs[i], &sa, NULL);
+		if (err < 0)
+			return err;
+	}
+
+	return 0;
+}
+
+static inline bool is_running(struct engine* const e)
+{
+	return !quit && e->running;
 }
 
 static inline int set_render_color(SDL_Renderer* const r, const SDL_Color* const col)
@@ -51,18 +61,7 @@ static inline int set_render_color(SDL_Renderer* const r, const SDL_Color* const
 	if (err < 0)
 		log_err("Could not set color [%s]", SDL_GetError());
 
-	return err;
-}
-
-int engine_clear(struct engine* const e)
-{
-	assert(e != NULL);
-
-	const int err = SDL_RenderClear(e->rndr);
-	if (err < 0)
-		log_err("Could not clear render [%s]", SDL_GetError());
-
-	return err;
+	return 0;
 }
 
 static inline SDL_KeyCode key_from_ev(const SDL_Event* const ev)
@@ -75,11 +74,58 @@ static inline struct vec2 vec_from_ev(const SDL_Event* const ev)
 	return vec2_create(ev->motion.x, ev->motion.y);
 }
 
+static int render(struct engine* const e)
+{
+	assert(e != NULL);
+
+	int err = engine_set_background(e, &e->bg_col);
+	if (err < 0)
+		return err;
+
+	err = e->ops.on_render(e);
+	if (err < 0)
+		return err;
+
+	SDL_RenderPresent(e->rndr);
+
+	return 0;
+}
+
+static inline bool is_keydown(const SDL_Event* const ev)
+{
+	return (ev->type == SDL_KEYDOWN);
+}
+
+static inline bool is_mousepress(const SDL_Event* const ev)
+{
+	return (
+		(ev->type == SDL_MOUSEMOTION) && (ev->button.button == SDL_BUTTON_LEFT));
+}
+
+static int poll_event(struct engine* const e)
+{
+	assert(e != NULL);
+
+	int err = 0;
+
+	while (SDL_PollEvent(&e->ev)) {
+		if (is_keydown(&e->ev))
+			err = e->ops.on_key_press(e, key_from_ev(&e->ev));
+		if (is_mousepress(&e->ev))
+			err = e->ops.on_mouse_press(e, vec_from_ev(&e->ev));
+		if (err < 0)
+			return err;
+	}
+
+	return 0;
+}
+
 int engine_init(
 	struct engine* const e,
 	const char* name,
 	struct vec2 size,
 	const SDL_Color* const bg_col,
+	u32 frame_delay_msec,
 	const struct engine_ops* const ops)
 {
 	assert(name != NULL);
@@ -114,6 +160,12 @@ int engine_init(
 		return -ENOMEM;
 	}
 
+	err = SDL_SetRenderDrawBlendMode(e->rndr, SDL_BLENDMODE_BLEND);
+	if (err < 0) {
+		log_err("Could not set blend mode [%s]", SDL_GetError());
+		return err;
+	}
+
 	err = set_render_color(e->rndr, &e->bg_col);
 	if (err < 0)
 		return err;
@@ -127,12 +179,13 @@ int engine_init(
 		return -ENODATA;
 	}
 
-	e->ops    = *ops;
-	e->bg_col = *bg_col;
+	e->ops              = *ops;
+	e->bg_col           = *bg_col;
+	e->frame_delay_msec = frame_delay_msec;
 
 	log_info("Initialized SDL backend");
 
-	return err;
+	return 0;
 }
 
 void engine_destroy(struct engine* const e)
@@ -167,7 +220,7 @@ int engine_draw_text(struct engine* const e, struct text* const t)
 	assert(e != NULL);
 	assert(t != NULL);
 
-	TTF_Font* const font = TTF_OpenFont(t->font, t->size);
+	TTF_Font* const font = TTF_OpenFont(t->font, (int)t->size);
 	if (font == NULL) {
 		log_err("Could not open font [%s]", SDL_GetError());
 		return -ENOMEM;
@@ -203,28 +256,15 @@ void engine_wait(u32 ms)
 	SDL_Delay(ms);
 }
 
-static inline bool is_running(struct engine* const e)
-{
-	return !quit && e->running;
-}
-
-int engine_poll_event(struct engine* const e)
+int engine_clear(struct engine* const e)
 {
 	assert(e != NULL);
 
-	while (SDL_PollEvent(&e->ev)) {
-		if (e->ev.type == SDL_KEYDOWN) {
-			const int err = e->ops.on_key_press(e, key_from_ev(&e->ev));
-			if (err < 0)
-				return err;
-		} else if ((e->ev.type == SDL_MOUSEMOTION) && (e->ev.button.button == SDL_BUTTON_LEFT)) {
-			const int err = e->ops.on_mouse_press(e, vec_from_ev(&e->ev));
-			if (err < 0)
-				return err;
-		}
-	}
+	const int err = SDL_RenderClear(e->rndr);
+	if (err < 0)
+		log_err("Could not clear render [%s]", SDL_GetError());
 
-	return 0;
+	return err;
 }
 
 int engine_set_background(struct engine* const e, const SDL_Color* const col)
@@ -239,49 +279,6 @@ int engine_set_background(struct engine* const e, const SDL_Color* const col)
 	return engine_clear(e);
 }
 
-int engine_render(struct engine* const e)
-{
-	assert(e != NULL);
-
-	int err = engine_set_background(e, &e->bg_col);
-	if (err < 0)
-		return err;
-
-	err = e->ops.on_render(e);
-	if (err < 0)
-		return err;
-
-	SDL_RenderPresent(e->rndr);
-
-	return 0;
-}
-
-static void quit_handler(int signo)
-{
-	UNUSED(signo);
-
-	quit = true;
-}
-
-static int quit_handler_init(void)
-{
-	static struct sigaction sa;
-	sa.sa_handler = quit_handler;
-
-	int err = sigfillset(&sa.sa_mask);
-	if (err < 0)
-		return err;
-
-	const int sigs[] = { SIGINT, SIGTERM };
-	for (int i = 0; i < ARR_SIZE(sigs); i++) {
-		err = sigaction(sigs[i], &sa, NULL);
-		if (err < 0)
-			return err;
-	}
-
-	return 0;
-}
-
 int engine_run(struct engine* const e)
 {
 	assert(e != NULL);
@@ -289,17 +286,21 @@ int engine_run(struct engine* const e)
 	quit_handler_init();
 	e->running = true;
 
+	int err = 0;
+
 	while (is_running(e)) {
-		int err = engine_render(e);
+		err = render(e);
 		if (err < 0)
 			return err;
 
-		err = engine_poll_event(e);
+		err = poll_event(e);
 		if (err < 0)
 			return err;
 
-		engine_wait(25);
+		engine_wait(e->frame_delay_msec);
 	}
+
+	engine_destroy(e);
 
 	return 0;
 }

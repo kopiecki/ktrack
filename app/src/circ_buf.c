@@ -29,8 +29,6 @@ int circ_buf_init(struct circ_buf* const cb, struct vec2* const x, u32 size)
 			return -ENOMEM;
 
 		cb->dalloc = true;
-
-		printf("Allocated buffer with size %d", cb->mask + 1);
 	}
 
 	return 0;
