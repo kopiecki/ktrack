@@ -16,10 +16,17 @@
 
 struct tracker {
 	struct engine base;
-	struct circ_buf m_track;
-	struct circ_buf kf_track;
+	struct circ_buf meas_track;
+	struct circ_buf pred_track;
 	struct rng_gauss meas_noise;
 	struct kf kf;
+
+	char meas_buf[MSG_SIZE];
+	struct text meas_text;
+
+	char pred_buf[MSG_SIZE];
+	struct text pred_text;
+
 	double x[STATE_SIZE];
 	double u[STATE_SIZE];
 	double z[MEAS_SIZE];

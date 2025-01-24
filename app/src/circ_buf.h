@@ -27,6 +27,11 @@ static inline struct vec2 circ_buf_get(const struct circ_buf* const cb, u32 i)
 	return cb->x[(cb->idx + i) & cb->mask];
 }
 
+static inline struct vec2 circ_buf_last(const struct circ_buf* const cb)
+{
+	return circ_buf_get(cb, 0);
+}
+
 static inline void circ_buf_push(struct circ_buf* const cb, struct vec2 v)
 {
 	cb->idx        = (cb->idx - 1) & cb->mask;

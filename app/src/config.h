@@ -26,7 +26,16 @@ static const SDL_Color m_col      = color_red;
 static const double noise_stddev  = 20.0;
 static const double noise_mean    = 0.0;
 static const u8 sample_dims       = 2;
-static const char* font = "/home/dk/p/git/sw/ktrack/fonts/Hack-Regular.ttf";
+static const char* meas_str       = "measurement: ";
+static const char* pred_str       = "prediction:  ";
+
+static const struct font_info hack_regular_25 = {
+	.path = "/home/dk/p/git/sw/ktrack/fonts/Hack-Regular.ttf",
+	.size = 25,
+};
+
+#define MSG_SIZE 32
+
 /**
  * @brief Number of states (x vector size)
  */

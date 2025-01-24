@@ -122,7 +122,7 @@ static int poll_event(struct engine* const e)
 
 int engine_init(
 	struct engine* const e,
-	const char* name,
+	const char* const name,
 	struct vec2 size,
 	const SDL_Color* const bg_col,
 	u32 frame_delay_msec,
@@ -220,13 +220,7 @@ int engine_draw_text(struct engine* const e, struct text* const t)
 	assert(e != NULL);
 	assert(t != NULL);
 
-	TTF_Font* const font = TTF_OpenFont(t->font, (int)t->size);
-	if (font == NULL) {
-		log_err("Could not open font [%s]", SDL_GetError());
-		return -ENOMEM;
-	}
-
-	SDL_Surface* const surf = TTF_RenderText_Solid(font, t->msg, t->col);
+	SDL_Surface* const surf = TTF_RenderText_Solid(t->font, t->buf, t->col);
 	if (surf == NULL) {
 		log_err("Could not open surf [%s]", SDL_GetError());
 		return -ENOMEM;

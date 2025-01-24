@@ -8,6 +8,7 @@
 #ifndef COMMON_H_INCLUDED_
 #define COMMON_H_INCLUDED_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef uint64_t u64;

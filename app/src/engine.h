@@ -11,23 +11,17 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_log.h>
 #include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "common.h"
+#include "text.h"
 
 struct rect {
 	SDL_Rect dim;
 	SDL_Color col;
-};
-
-struct text {
-	SDL_Rect dim;
-	const char* msg;
-	const char* font;
-	SDL_Color col;
-	u32 size;
 };
 
 static const SDL_Color color_navy  = { .r = 0, .g = 17, .b = 51, .a = 255 };
@@ -59,6 +53,7 @@ struct engine {
 	SDL_Renderer* rndr;
 	SDL_Color bg_col;
 	SDL_Event ev;
+	TTF_Font* text_font;
 	u32 frame_delay_msec;
 	bool running;
 };
