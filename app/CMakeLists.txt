@@ -1,12 +1,9 @@
 set(target ${PROJECT_NAME})
-set(sources src/track.c src/app.c src/kf.c src/rng.c src/text.c src/circ_buf.c src/engine.c src/main.c)
+set(sources src/track.c src/app.c src/circ_buf.c src/main.c)
 
 add_executable(${target} ${sources})
 
-find_package(GSL REQUIRED)
-include_directories(${GSL_INCLUDE_DIR})
-
-target_link_libraries(${target} PRIVATE SDL2 SDL2_ttf GSL::gsl GSL::gslcblas)
+target_link_libraries(${target} PRIVATE dsp engine)
 
 include(compiler/warnings-c)
 compiler_warnings_install(${target})

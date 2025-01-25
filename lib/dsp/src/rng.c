@@ -1,11 +1,14 @@
-/*
+/**
  * @file   rng.c
+ * @brief  Random number generator with gaussian (normal) distribution
+ * @author Daniel Kopiecki
+ * @date   2025-01-25
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include "rng.h"
+#include "dsp/rng.h"
 
 #include <assert.h>
 #include <gsl/gsl_randist.h>

@@ -1,17 +1,20 @@
-/*
+/**
  * @file   text.c
+ * @brief  Renderable text object
+ * @author Daniel Kopiecki
+ * @date   2025-01-25
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include "text.h"
+#include "engine/text.h"
 
 #include <SDL2/SDL_ttf.h>
 #include <assert.h>
 #include <errno.h>
 
-int text_init(struct text* const t, const struct font* const font, size_t size)
+int text_init(struct text* const t, const struct font_info* const font, size_t size)
 {
 	assert(t != NULL);
 

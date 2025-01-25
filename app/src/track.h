@@ -9,13 +9,14 @@
 #define TRACK_H_INCLUDED_
 
 #include "circ_buf.h"
-#include "engine.h"
-#include "text.h"
+#include "engine/common.h"
+#include "engine/engine.h"
+#include "engine/text.h"
 
 struct track_cfg {
 	const char* const name;
 	SDL_Color drawing_col;
-	const struct font* const text_font;
+	const struct font_info* const text_font;
 	struct vec2 text_pos;
 	struct vec2 sample_dims;
 	size_t cbuf_size;

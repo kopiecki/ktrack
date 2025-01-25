@@ -1,11 +1,14 @@
-/*
+/**
  * @file   kf.c
+ * @brief  Kalman filter implementation
+ * @author Daniel Kopiecki
+ * @date   2025-01-25
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include "kf.h"
+#include "dsp/kf.h"
 
 #include <assert.h>
 #include <gsl/gsl_blas.h>
@@ -402,6 +405,8 @@ void kf_get(const struct kf* const kf, double* const x)
 
 void kf_reset(const struct kf* const kf)
 {
+	assert(kf != NULL);
+
 	gsl_vector_set_zero(kf->x);
 	gsl_matrix_set_zero(kf->p);
 }

@@ -9,10 +9,6 @@
 
 #include <assert.h>
 
-#include "circ_buf.h"
-#include "engine.h"
-#include "text.h"
-
 #define TEXT_BUF_ADD_SIZE 15
 #define TEXT_FMT_STR      "%s: [%d, %d]"
 

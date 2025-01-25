@@ -1,22 +1,28 @@
-/*
+/**
  * @file   engine.c
+ * @brief  Stupid SDL backend engine
+ * @author Daniel Kopiecki
+ * @date   2025-01-25
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include "engine.h"
+#include "engine/engine.h"
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdatomic.h>
+
+#include "engine/sig_handler.h"
 
 #define UNUSED(v)     (void)(v)
 #define ARR_SIZE(arr) (int)(sizeof((arr)) / sizeof((arr)[0]))
 
+static const int sigs[] = { SIGINT, SIGTERM };
 static atomic_bool quit = false;
 
 static void quit_handler(int signo)
@@ -24,25 +30,6 @@ static void quit_handler(int signo)
 	UNUSED(signo);
 
 	quit = true;
-}
-
-static int quit_handler_init(void)
-{
-	static struct sigaction sa;
-	sa.sa_handler = quit_handler;
-
-	int err = sigfillset(&sa.sa_mask);
-	if (err < 0)
-		return err;
-
-	const int sigs[] = { SIGINT, SIGTERM };
-	for (int i = 0; i < ARR_SIZE(sigs); i++) {
-		err = sigaction(sigs[i], &sa, NULL);
-		if (err < 0)
-			return err;
-	}
-
-	return 0;
 }
 
 static inline bool is_running(struct engine* const e)
@@ -68,15 +55,39 @@ static inline struct vec2 vec_from_ev(const SDL_Event* const ev)
 	return vec2_create(ev->motion.x, ev->motion.y);
 }
 
+static inline int render_clear(struct engine* const e)
+{
+	assert(e != NULL);
+
+	return SDL_RenderClear(e->rndr);
+}
+
+static inline void wait(u32 ms)
+{
+	SDL_Delay(ms);
+}
+
+static int set_background(struct engine* const e, const SDL_Color* const col)
+{
+	assert(e != NULL);
+	assert(col != NULL);
+
+	const int err = set_render_color(e->rndr, col);
+	if (err < 0)
+		return err;
+
+	return render_clear(e);
+}
+
 static int render(struct engine* const e)
 {
 	assert(e != NULL);
 
-	int err = engine_set_background(e, &e->bg_col);
+	int err = set_background(e, &e->bg_col);
 	if (err < 0)
 		return err;
 
-	err = e->ops.on_render(e);
+	err = e->ops->on_render(e);
 	if (err < 0)
 		return err;
 
@@ -104,9 +115,9 @@ static int poll_event(struct engine* const e)
 
 	while (SDL_PollEvent(&e->ev)) {
 		if (is_keydown(&e->ev))
-			err = e->ops.on_key_press(e, key_from_ev(&e->ev));
+			err = e->ops->on_key(e, key_from_ev(&e->ev));
 		if (is_mousepress(&e->ev))
-			err = e->ops.on_mouse_press(e, vec_from_ev(&e->ev));
+			err = e->ops->on_mouse(e, vec_from_ev(&e->ev));
 		if (err < 0)
 			return err;
 	}
@@ -154,18 +165,18 @@ int engine_init(
 	if (err < 0)
 		return err;
 
-	err = engine_clear(e);
+	err = render_clear(e);
 	if (err < 0)
 		return err;
 
 	if (ops == NULL)
 		return -ENODATA;
 
-	e->ops              = *ops;
+	e->ops              = ops;
 	e->bg_col           = *bg_col;
 	e->frame_delay_msec = frame_delay_msec;
 
-	log_info("Initialized SDL backend");
+	SDL_Log("Initialized SDL backend");
 
 	return 0;
 }
@@ -176,7 +187,7 @@ void engine_destroy(struct engine* const e)
 	SDL_DestroyRenderer(e->rndr);
 	SDL_Quit();
 
-	log_info("Deinitialized SDL backend");
+	SDL_Log("Deinitialized SDL backend");
 }
 
 int engine_draw_rect(struct engine* const e, const struct rect* const r)
@@ -211,38 +222,14 @@ int engine_draw_text(struct engine* const e, struct text* const t)
 	return SDL_RenderCopy(e->rndr, texture, NULL, &t->dim);
 }
 
-void engine_wait(u32 ms)
-{
-	SDL_Delay(ms);
-}
-
-int engine_clear(struct engine* const e)
-{
-	assert(e != NULL);
-
-	return SDL_RenderClear(e->rndr);
-}
-
-int engine_set_background(struct engine* const e, const SDL_Color* const col)
-{
-	assert(e != NULL);
-	assert(col != NULL);
-
-	const int err = set_render_color(e->rndr, col);
-	if (err < 0)
-		return err;
-
-	return engine_clear(e);
-}
-
 int engine_run(struct engine* const e)
 {
 	assert(e != NULL);
 
-	quit_handler_init();
-	e->running = true;
+	sig_handler_init(sigs, ARR_SIZE(sigs), quit_handler);
 
-	int err = 0;
+	e->running = true;
+	int err    = 0;
 
 	while (is_running(e)) {
 		err = render(e);
@@ -253,7 +240,7 @@ int engine_run(struct engine* const e)
 		if (err < 0)
 			return err;
 
-		engine_wait(e->frame_delay_msec);
+		wait(e->frame_delay_msec);
 	}
 
 	engine_destroy(e);

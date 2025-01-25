@@ -1,7 +1,10 @@
-/*
+/**
  * @file   circ_buf.c
+ * @brief  Trivial circural buffer implementation
+ * @author Daniel Kopiecki
+ * @date   2025-01-25
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -12,8 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
-
 int circ_buf_init(struct circ_buf* const cb, size_t size)
 {
 	assert(cb != NULL);
@@ -21,13 +22,12 @@ int circ_buf_init(struct circ_buf* const cb, size_t size)
 	for (cb->mask = 1; cb->mask < size; cb->mask *= 2)
 		;
 
-	cb->mask--;
-	cb->idx = 0;
-
-	cb->x = calloc(cb->mask + 1, sizeof(struct vec2));
+	cb->x = calloc(cb->mask, sizeof(struct vec2));
 	if (cb->x == NULL)
 		return -ENOMEM;
 
+	cb->mask--;
+	cb->idx       = 0;
 	cb->curr_size = 0;
 
 	return 0;
@@ -36,6 +36,17 @@ int circ_buf_init(struct circ_buf* const cb, size_t size)
 void circ_buf_destroy(struct circ_buf* const cb)
 {
 	free(cb->x);
+}
+
+void circ_buf_push(struct circ_buf* const cb, struct vec2 v)
+{
+	assert(cb != NULL);
+
+	cb->idx        = (cb->idx - 1) & cb->mask;
+	cb->x[cb->idx] = v;
+
+	if (cb->curr_size < circ_buf_capacity(cb))
+		cb->curr_size++;
 }
 
 void circ_buf_reset(struct circ_buf* const cb)

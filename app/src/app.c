@@ -1,7 +1,10 @@
-/*
+/**
  * @file   app.c
+ * @brief  Kalman tracker application
+ * @author Daniel Kopiecki
+ * @date   2025-01-25
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -9,24 +12,26 @@
 
 #include <assert.h>
 
-#include "common.h"
-#include "config.h"
-#include "engine.h"
-#include "kf.h"
-#include "rng.h"
-#include "track.h"
+#include "dsp/rng.h"
+#include "engine/common.h"
+#include "engine/engine.h"
 
 #define child_of(base) (struct app*)(base)
+
+static inline struct vec2 make_noise(const struct rng_gauss* const rng)
+{
+	const i32 xn = (i32)rng_gauss_get(rng);
+	const i32 yn = (i32)rng_gauss_get(rng);
+
+	return vec2_create(xn, yn);
+}
 
 static struct vec2 take_meas(
 	struct vec2 pos,
 	struct track* const meas_track,
 	const struct rng_gauss* const rng)
 {
-	const i32 xn = (i32)rng_gauss_get(rng);
-	const i32 yn = (i32)rng_gauss_get(rng);
-
-	const struct vec2 noise = vec2_create(xn, yn);
+	const struct vec2 noise = make_noise(rng);
 	const struct vec2 meas  = vec2_add_v(pos, noise);
 
 	track_update(meas_track, meas);
@@ -63,10 +68,10 @@ static int handle_mousepress(struct engine* const e, struct vec2 pos)
 	struct app* const ctx = child_of(e);
 
 	const struct vec2 meas =
-		take_meas(pos, &ctx->tracks[track_tp_meas], &ctx->meas_noise);
+		take_meas(pos, &ctx->tracks[TRACK_MEAS], &ctx->meas_noise);
 
 	return update_kf(
-		meas, &ctx->tracks[track_tp_pred], &ctx->kf, ctx->x, ctx->z, ctx->u);
+		meas, &ctx->tracks[TRACK_PRED], &ctx->kf, ctx->x, ctx->z, ctx->u);
 }
 
 static int handle_keypress(struct engine* const e, SDL_Keycode key)
@@ -79,7 +84,7 @@ static int handle_keypress(struct engine* const e, SDL_Keycode key)
 		break;
 	case SDLK_c:
 		kf_reset(&ctx->kf);
-		for (u8 i = 0; i < num_tracks; i++)
+		for (u8 i = 0; i < NUM_TRACKS; i++)
 			track_reset(&ctx->tracks[i]);
 		break;
 	default:
@@ -93,7 +98,7 @@ static int on_render(struct engine* const e)
 {
 	struct app* const ctx = child_of(e);
 
-	for (u8 i = 0; i < num_tracks; i++) {
+	for (u8 i = 0; i < NUM_TRACKS; i++) {
 		int err = track_draw(&ctx->tracks[i], e);
 		if (err < 0)
 			return err;
@@ -107,9 +112,9 @@ static int on_render(struct engine* const e)
 }
 
 static const struct engine_ops ops = {
-	.on_render      = on_render,
-	.on_key_press   = handle_keypress,
-	.on_mouse_press = handle_mousepress,
+	.on_render = on_render,
+	.on_key    = handle_keypress,
+	.on_mouse  = handle_mousepress,
 };
 
 int app_run(struct app* const ctx)
@@ -118,17 +123,17 @@ int app_run(struct app* const ctx)
 
 	struct engine* const e = (struct engine*)ctx;
 
-	int err = engine_init(e, app_name, win_size, &bg_col, frame_delay_msec, &ops);
+	int err = engine_init(e, APP_NAME, win_size, &bg_col, FRAME_DELAY_MSEC, &ops);
 	if (err < 0)
 		return err;
 
-	for (u8 i = 0; i < num_tracks; i++) {
+	for (u8 i = 0; i < NUM_TRACKS; i++) {
 		err = track_init(&ctx->tracks[i], &track_cfgs[i]);
 		if (err < 0)
 			return err;
 	}
 
-	err = rng_gauss_init(&ctx->meas_noise, noise_stddev, noise_mean);
+	err = rng_gauss_init(&ctx->meas_noise, NOISE_STDDEV, NOISE_MEAN);
 	if (err < 0)
 		return err;
 
@@ -136,12 +141,18 @@ int app_run(struct app* const ctx)
 	if (err < 0)
 		return err;
 
-	return engine_run(e);
+	err = engine_run(e);
+	if (err < 0)
+		return err;
+
+	app_destroy(ctx);
+
+	return 0;
 }
 
 void app_destroy(struct app* const ctx)
 {
-	for (u8 i = 0; i < num_tracks; i++)
+	for (u8 i = 0; i < NUM_TRACKS; i++)
 		track_destroy(&ctx->tracks[i]);
 
 	rng_gauss_destroy(&ctx->meas_noise);

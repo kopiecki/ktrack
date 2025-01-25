@@ -1,11 +1,12 @@
-/*
+/**
  * @file   main.c
+ * @brief  Application entry point
+ * @author Daniel Kopiecki
+ * @date   2025-01-25
  *
- * SPDX-FileCopyrightText: 2024 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
-
-#include <SDL2/SDL_pixels.h>
 
 #include "app.h"
 
@@ -16,8 +17,6 @@ int main(void)
 	const int err = app_run(&app);
 	if (err < 0)
 		return err;
-
-	app_destroy(&app);
 
 	return 0;
 }

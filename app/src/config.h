@@ -10,28 +10,29 @@
 
 #include <gsl/gsl_matrix.h>
 
-#include "common.h"
-#include "engine.h"
+#include "engine/common.h"
+#include "engine/engine.h"
 #include "track.h"
 
-static const char* const app_name = "ktrack";
-static const u32 frame_delay_msec = 25;
+#define APP_NAME         "ktrack"
+#define FRAME_DELAY_MSEC 25U
+
 static const struct vec2 win_size = { 1000, 1000 };
 static const SDL_Color bg_col     = color_navy;
 
-static const struct font hack_regular_25 = {
+static const struct font_info hack_regular_25 = {
 	.path = "fonts/Hack-Regular.ttf",
 	.size = 25,
 };
 
 enum track_tp {
-	track_tp_meas = 0,
-	track_tp_pred,
-	num_tracks,
+	TRACK_MEAS = 0,
+	TRACK_PRED,
+	NUM_TRACKS,
 };
 
 static const struct track_cfg track_cfgs[] = {
-	[track_tp_meas] = {
+	[TRACK_MEAS] = {
 		.name        = "measurement",
 		.drawing_col = color_red,
 		.text_font   = &hack_regular_25,
@@ -39,7 +40,7 @@ static const struct track_cfg track_cfgs[] = {
 		.sample_dims = { .x = 2, .y = 2, },
 		.cbuf_size   = (1 << 8),
 	},
-	[track_tp_pred] = {
+	[TRACK_PRED] = {
 		.name        = "prediction",
 		.drawing_col = color_green,
 		.text_font   = &hack_regular_25,
@@ -49,10 +50,9 @@ static const struct track_cfg track_cfgs[] = {
 	},
 };
 
-static const double noise_stddev = 20.0;
-static const double noise_mean   = 0.0;
+#define NOISE_STDDEV 20.0
 
-#define MSG_SIZE 32
+#define NOISE_MEAN 0.0
 
 /**
  * @brief Number of states (x vector size)
