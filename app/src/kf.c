@@ -400,4 +400,10 @@ void kf_get(const struct kf* const kf, double* const x)
 		x[i] = gsl_vector_get(kf->x, i);
 }
 
+void kf_reset(const struct kf* const kf)
+{
+	gsl_vector_set_zero(kf->x);
+	gsl_matrix_set_zero(kf->p);
+}
+
 /**** END OF FILE ****/

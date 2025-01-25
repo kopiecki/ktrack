@@ -11,36 +11,39 @@
 #include <assert.h>
 #include <errno.h>
 
-int text_init(
-	struct text* const t, const struct font_info* const font, char* const buf)
+int text_init(struct text* const t, const struct font* const font, size_t size)
 {
 	assert(t != NULL);
 
-	int err = text_load_font(t, font);
-	if (err < 0)
-		return err;
+	t->buf = calloc(size, sizeof(char));
+	if (t->buf == NULL)
+		return -ENOMEM;
 
-	if (buf == NULL)
-		return -ENOBUFS;
+	t->size = size;
 
-	t->buf = buf;
-
-	return 0;
-}
-
-int text_load_font(struct text* const t, const struct font_info* const font)
-{
-	assert(t != NULL);
-	assert(font != NULL);
-
-	if (t->font != NULL)
-		TTF_CloseFont(t->font);
-
-	t->font = TTF_OpenFont(font->path, font->size);
+	t->font = TTF_OpenFont(font->path, (int)font->size);
 	if (t->font == NULL)
 		return -ENOMEM;
 
 	return 0;
+}
+
+void text_destroy(struct text* const t)
+{
+	free(t->buf);
+	TTF_CloseFont(t->font);
+}
+
+int text_format(struct text* const t, const char* const fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+
+	int num_chars = vsnprintf(t->buf, t->size, fmt, va);
+
+	va_end(va);
+
+	return num_chars;
 }
 
 /**** END OF FILE ****/

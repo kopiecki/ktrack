@@ -31,11 +31,9 @@
 struct kf {
 	size_t n_state;
 	size_t n_meas;
-
 	gsl_vector* x;
 	gsl_vector* z;
 	gsl_vector* u;
-
 	gsl_matrix* f;
 	gsl_matrix* h;
 	gsl_matrix* q;
@@ -43,7 +41,6 @@ struct kf {
 	gsl_matrix* b;
 	gsl_matrix* p;
 	gsl_matrix* k;
-
 	struct {
 		gsl_vector* fx;
 		gsl_vector* hx;
@@ -114,6 +111,14 @@ int kf_update(struct kf* const kf, const double* const z);
  * @param x  Array in which state prediction will be copied
  */
 void kf_get(const struct kf* const kf, double* const x);
+
+/**
+ * @brief Reset Kalman state. This function sets current state prediction X and
+ * prediction matrix P to zero.
+ *
+ * @param kf Instance pointer
+ */
+void kf_reset(const struct kf* const kf);
 
 #endif /* KF_H_INCLUDED_ */
 

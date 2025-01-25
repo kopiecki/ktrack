@@ -8,31 +8,49 @@
 #ifndef CFG_H_INCLUDED_
 #define CFG_H_INCLUDED_
 
-#include <SDL2/SDL_pixels.h>
-#include <complex.h>
 #include <gsl/gsl_matrix.h>
-#include <gsl/gsl_matrix_double.h>
-#include <stdbool.h>
 
+#include "common.h"
 #include "engine.h"
+#include "track.h"
 
-static const char* name           = "ktrack";
+static const char* const app_name = "ktrack";
 static const u32 frame_delay_msec = 25;
-static const u32 circ_buf_size    = (1 << 8);
 static const struct vec2 win_size = { 1000, 1000 };
 static const SDL_Color bg_col     = color_navy;
-static const SDL_Color kf_col     = color_green;
-static const SDL_Color m_col      = color_red;
-static const double noise_stddev  = 20.0;
-static const double noise_mean    = 0.0;
-static const u8 sample_dims       = 2;
-static const char* meas_str       = "measurement: ";
-static const char* pred_str       = "prediction:  ";
 
-static const struct font_info hack_regular_25 = {
-	.path = "/home/dk/p/git/sw/ktrack/fonts/Hack-Regular.ttf",
+static const struct font hack_regular_25 = {
+	.path = "fonts/Hack-Regular.ttf",
 	.size = 25,
 };
+
+enum track_tp {
+	track_tp_meas = 0,
+	track_tp_pred,
+	num_tracks,
+};
+
+static const struct track_cfg track_cfgs[] = {
+	[track_tp_meas] = {
+		.name        = "measurement",
+		.drawing_col = color_red,
+		.text_font   = &hack_regular_25,
+		.text_pos    = { .x = 600, .y = 0 },
+		.sample_dims = { .x = 2, .y = 2, },
+		.cbuf_size   = (1 << 8),
+	},
+	[track_tp_pred] = {
+		.name        = "prediction",
+		.drawing_col = color_green,
+		.text_font   = &hack_regular_25,
+		.text_pos    = { .x = 614, .y = 25 },
+		.sample_dims = { .x = 2, .y = 2, },
+		.cbuf_size   = (1 << 8),
+	},
+};
+
+static const double noise_stddev = 20.0;
+static const double noise_mean   = 0.0;
 
 #define MSG_SIZE 32
 

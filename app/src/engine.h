@@ -29,16 +29,6 @@ static const SDL_Color color_blue  = { .r = 0, .g = 0, .b = 255, .a = 255 };
 static const SDL_Color color_red   = { .r = 255, .g = 0, .b = 0, .a = 255 };
 static const SDL_Color color_green = { .r = 0, .g = 255, .b = 0, .a = 255 };
 
-static inline SDL_Color set_opacity(SDL_Color col, u8 a)
-{
-	return (SDL_Color) {
-		.r = col.r,
-		.g = col.g,
-		.b = col.b,
-		.a = a,
-	};
-}
-
 #define log_info(...) SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define log_warn(...) SDL_LogInfo(SDL_LOG_CATEGORY_WARNING, __VA_ARGS__)
 #define log_err(...)  SDL_LogInfo(SDL_LOG_CATEGORY_ERROR, __VA_ARGS__)

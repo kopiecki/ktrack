@@ -7,17 +7,17 @@
 
 #include <SDL2/SDL_pixels.h>
 
-#include "tracker.h"
+#include "app.h"
 
-static struct tracker tr;
+static struct app app;
 
 int main(void)
 {
-	const int err = tracker_run(&tr);
+	const int err = app_run(&app);
 	if (err < 0)
 		return err;
 
-	tracker_destroy(&tr);
+	app_destroy(&app);
 
 	return 0;
 }

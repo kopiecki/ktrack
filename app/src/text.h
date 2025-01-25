@@ -15,7 +15,7 @@
 
 #include "common.h"
 
-struct font_info {
+struct font {
 	const char* const path;
 	size_t size;
 };
@@ -25,21 +25,18 @@ struct text {
 	SDL_Color col;
 	SDL_Rect dim;
 	char* buf;
+	size_t size;
 };
 
-int text_init(
-	struct text* const t, const struct font_info* const font, char* const buf);
-int text_load_font(struct text* const t, const struct font_info* const font);
+int text_init(struct text* const t, const struct font* const font, size_t size);
+void text_destroy(struct text* const t);
+
+int text_format(struct text* const t, const char* const fmt, ...);
 
 static inline void text_set_pos(struct text* const t, struct vec2 pos)
 {
 	t->dim.x = pos.x;
 	t->dim.y = pos.y;
-}
-
-static inline void text_set_col(struct text* const t, const SDL_Color* const col)
-{
-	t->col = *col;
 }
 
 #endif /* TEXT_H_INCLUDED_ */

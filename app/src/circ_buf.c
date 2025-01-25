@@ -7,13 +7,14 @@
 
 #include "circ_buf.h"
 
-#include <asm-generic/errno.h>
 #include <assert.h>
-#include <stdbool.h>
-#include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
-int circ_buf_init(struct circ_buf* const cb, struct vec2* const x, u32 size)
+#include "common.h"
+
+int circ_buf_init(struct circ_buf* const cb, size_t size)
 {
 	assert(cb != NULL);
 
@@ -23,21 +24,25 @@ int circ_buf_init(struct circ_buf* const cb, struct vec2* const x, u32 size)
 	cb->mask--;
 	cb->idx = 0;
 
-	if (x == NULL) {
-		cb->x = calloc(cb->mask + 1, sizeof(struct vec2));
-		if (cb->x == NULL)
-			return -ENOMEM;
+	cb->x = calloc(cb->mask + 1, sizeof(struct vec2));
+	if (cb->x == NULL)
+		return -ENOMEM;
 
-		cb->dalloc = true;
-	}
+	cb->curr_size = 0;
 
 	return 0;
 }
 
 void circ_buf_destroy(struct circ_buf* const cb)
 {
-	if (cb->dalloc)
-		free(cb->x);
+	free(cb->x);
+}
+
+void circ_buf_reset(struct circ_buf* const cb)
+{
+	assert(cb != NULL);
+
+	memset(cb->x, 0, circ_buf_curr_size(cb) * sizeof(struct vec2));
 }
 
 /**** END OF FILE ****/

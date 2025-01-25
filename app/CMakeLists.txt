@@ -1,5 +1,5 @@
 set(target ${PROJECT_NAME})
-set(sources src/tracker.c src/kf.c src/rng.c src/text.c src/circ_buf.c src/engine.c src/main.c)
+set(sources src/track.c src/app.c src/kf.c src/rng.c src/text.c src/circ_buf.c src/engine.c src/main.c)
 
 add_executable(${target} ${sources})
 

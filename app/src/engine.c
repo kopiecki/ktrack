@@ -8,8 +8,6 @@
 #include "engine.h"
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_ttf.h>
 #include <assert.h>
 #include <errno.h>
@@ -57,11 +55,7 @@ static inline int set_render_color(SDL_Renderer* const r, const SDL_Color* const
 	assert(r != NULL);
 	assert(col != NULL);
 
-	const int err = SDL_SetRenderDrawColor(r, col->r, col->g, col->b, col->a);
-	if (err < 0)
-		log_err("Could not set color [%s]", SDL_GetError());
-
-	return 0;
+	return SDL_SetRenderDrawColor(r, col->r, col->g, col->b, col->a);
 }
 
 static inline SDL_KeyCode key_from_ev(const SDL_Event* const ev)
@@ -131,16 +125,12 @@ int engine_init(
 	assert(name != NULL);
 
 	int err = SDL_Init(SDL_INIT_VIDEO);
-	if (err < 0) {
-		log_err("Could not init SDL [%s]", SDL_GetError());
+	if (err < 0)
 		return err;
-	}
 
 	err = TTF_Init();
-	if (err < 0) {
-		log_err("Could not init TTF [%s]", SDL_GetError());
+	if (err < 0)
 		return err;
-	}
 
 	e->win = SDL_CreateWindow(
 		name,
@@ -149,22 +139,16 @@ int engine_init(
 		size.x,
 		size.y,
 		SDL_WINDOW_SHOWN);
-	if (e->win == NULL) {
-		log_err("Could not create window [%s]", SDL_GetError());
+	if (e->win == NULL)
 		return -ENOMEM;
-	}
 
 	e->rndr = SDL_CreateRenderer(e->win, -1, SDL_RENDERER_ACCELERATED);
-	if (e->rndr == NULL) {
-		log_err("Could not create renderer [%s]", SDL_GetError());
+	if (e->rndr == NULL)
 		return -ENOMEM;
-	}
 
 	err = SDL_SetRenderDrawBlendMode(e->rndr, SDL_BLENDMODE_BLEND);
-	if (err < 0) {
-		log_err("Could not set blend mode [%s]", SDL_GetError());
+	if (err < 0)
 		return err;
-	}
 
 	err = set_render_color(e->rndr, &e->bg_col);
 	if (err < 0)
@@ -174,10 +158,8 @@ int engine_init(
 	if (err < 0)
 		return err;
 
-	if (ops == NULL) {
-		log_err("SDL backend requires event handler structure");
+	if (ops == NULL)
 		return -ENODATA;
-	}
 
 	e->ops              = *ops;
 	e->bg_col           = *bg_col;
@@ -206,13 +188,7 @@ int engine_draw_rect(struct engine* const e, const struct rect* const r)
 	if (err < 0)
 		return err;
 
-	err = SDL_RenderFillRect(e->rndr, &r->dim);
-	if (err < 0) {
-		log_err("Could not fill rect [%s]", SDL_GetError());
-		return err;
-	}
-
-	return 0;
+	return SDL_RenderFillRect(e->rndr, &r->dim);
 }
 
 int engine_draw_text(struct engine* const e, struct text* const t)
@@ -221,28 +197,18 @@ int engine_draw_text(struct engine* const e, struct text* const t)
 	assert(t != NULL);
 
 	SDL_Surface* const surf = TTF_RenderText_Solid(t->font, t->buf, t->col);
-	if (surf == NULL) {
-		log_err("Could not open surf [%s]", SDL_GetError());
+	if (surf == NULL)
 		return -ENOMEM;
-	}
 
 	SDL_Texture* const texture = SDL_CreateTextureFromSurface(e->rndr, surf);
-	if (texture == NULL) {
-		log_err("Could not create texture from surface [%s]", SDL_GetError());
+	if (texture == NULL)
 		return -ENOMEM;
-	}
 
 	int err = SDL_QueryTexture(texture, NULL, NULL, &t->dim.w, &t->dim.h);
-	if (err < 0) {
-		log_err("Could not query texture for size [%s]", SDL_GetError());
-		return err;
-	}
-
-	err = SDL_RenderCopy(e->rndr, texture, NULL, &t->dim);
 	if (err < 0)
-		log_err("Could not copy texture [%s]", SDL_GetError());
+		return err;
 
-	return err;
+	return SDL_RenderCopy(e->rndr, texture, NULL, &t->dim);
 }
 
 void engine_wait(u32 ms)
@@ -254,11 +220,7 @@ int engine_clear(struct engine* const e)
 {
 	assert(e != NULL);
 
-	const int err = SDL_RenderClear(e->rndr);
-	if (err < 0)
-		log_err("Could not clear render [%s]", SDL_GetError());
-
-	return err;
+	return SDL_RenderClear(e->rndr);
 }
 
 int engine_set_background(struct engine* const e, const SDL_Color* const col)
