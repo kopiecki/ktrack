@@ -23,10 +23,10 @@ struct app {
 	struct engine base;              /**< Base (parent) struct*/
 	struct track tracks[NUM_TRACKS]; /**< Measurement and prediction tracks*/
 	struct rng_gauss meas_noise;     /**< Measurement noise*/
-	struct kf kf;                    /**< Kalman filter instance*/
-	double x[STATE_SIZE];            /**< State vector*/
-	double u[STATE_SIZE];            /**< Control-input vector*/
-	double z[MEAS_SIZE];             /**< Measurement vector*/
+	struct kf kf;         /**< Kalman filter instance*/
+	double x[STATE_SIZE]; /**< State vector*/
+	double u[STATE_SIZE]; /**< Control-input vector*/
+	double z[MEAS_SIZE];  /**< Measurement vector*/
 };
 
 /**

@@ -13,7 +13,7 @@
 
 #include <stddef.h>
 
-#include "engine/common.h"
+#include "engine/vec2.h"
 
 /**
  * @brief Circural buffer representation

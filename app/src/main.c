@@ -18,6 +18,8 @@ int main(void)
 	if (err < 0)
 		return err;
 
+	app_destroy(&app);
+
 	return 0;
 }
 

@@ -1,13 +1,18 @@
-/*
+/**
  * @file   track.c
+ * @brief  Track representation
+ * @author Daniel Kopiecki
+ * @date   2025-01-26
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "track.h"
 
 #include <assert.h>
+
+#include "circ_buf.h"
 
 #define TEXT_BUF_ADD_SIZE 15
 #define TEXT_FMT_STR      "%s: [%d, %d]"
@@ -33,7 +38,7 @@ int track_init(struct track* const tr, const struct track_cfg* const cfg)
 	err = text_init(
 		&tr->text, cfg->text_font, strlen(cfg->name) + TEXT_BUF_ADD_SIZE);
 	if (err < 0)
-		return err;
+		goto buf_destroy;
 
 	tr->sample.col   = cfg->drawing_col;
 	tr->sample.dim.w = cfg->sample_dims.x;
@@ -45,6 +50,11 @@ int track_init(struct track* const tr, const struct track_cfg* const cfg)
 	tr->name = cfg->name;
 
 	return 0;
+
+buf_destroy:
+	circ_buf_destroy(&tr->cbuf);
+
+	return err;
 }
 
 void track_destroy(struct track* const tr)

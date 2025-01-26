@@ -13,7 +13,7 @@
 
 #include <SDL2/SDL_ttf.h>
 
-#include "common.h"
+#include "engine/vec2.h"
 
 /**
  * @brief Aggregated font information

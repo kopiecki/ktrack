@@ -1,39 +1,19 @@
 /**
- * @file   common.h
- * @brief  Common SDL backend types and constants
+ * @file   vec2.h
+ * @brief  Generic two-element vector
  * @author Daniel Kopiecki
- * @date   2025-01-25
+ * @date   2025-01-26
  *
  * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef COMMON_H_INCLUDED_
-#define COMMON_H_INCLUDED_
+#ifndef VEC2_H_INCLUDED_
+#define VEC2_H_INCLUDED_
 
-#include <SDL2/SDL_rect.h>
 #include <stdbool.h>
-#include <stdint.h>
 
-typedef uint64_t u64;
-typedef uint32_t u32;
-typedef uint8_t u8;
-typedef int64_t i64;
-typedef int32_t i32;
-typedef int8_t i8;
-
-static const SDL_Color color_navy  = { .r = 0, .g = 17, .b = 51, .a = 255 };
-static const SDL_Color color_blue  = { .r = 0, .g = 0, .b = 255, .a = 255 };
-static const SDL_Color color_red   = { .r = 255, .g = 0, .b = 0, .a = 255 };
-static const SDL_Color color_green = { .r = 0, .g = 255, .b = 0, .a = 255 };
-
-/**
- * @brief Aggregated renderable rectangle object
- */
-struct rect {
-	SDL_Rect dim;  /**< Rectangle dimensions (w, h, x, y)*/
-	SDL_Color col; /**< Rectangle color*/
-};
+#include "engine/types.h"
 
 /**
  * @brief Generic vector with two elements
@@ -83,6 +63,6 @@ static inline bool vec2_eq(const struct vec2 lhs, const struct vec2 rhs)
 	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
 }
 
-#endif /* COMMON_H_INCLUDED_ */
+#endif /* VEC2_H_INCLUDED_ */
 
 /**** END OF FILE ****/

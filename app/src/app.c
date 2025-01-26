@@ -12,8 +12,8 @@
 
 #include <assert.h>
 
+#include "dsp/kf.h"
 #include "dsp/rng.h"
-#include "engine/common.h"
 #include "engine/engine.h"
 
 #define child_of(base) (struct app*)(base)
@@ -123,31 +123,41 @@ int app_run(struct app* const ctx)
 
 	struct engine* const e = (struct engine*)ctx;
 
-	int err = engine_init(e, APP_NAME, win_size, &bg_col, FRAME_DELAY_MSEC, &ops);
+	int err = engine_init(e, APP_NAME, win_size, bg_col, FRAME_DELAY_MSEC, &ops);
 	if (err < 0)
 		return err;
 
 	for (u8 i = 0; i < NUM_TRACKS; i++) {
 		err = track_init(&ctx->tracks[i], &track_cfgs[i]);
 		if (err < 0)
-			return err;
+			goto engine_free;
 	}
 
-	err = rng_gauss_init(&ctx->meas_noise, NOISE_STDDEV, NOISE_MEAN);
+	err = rng_gauss_init(&ctx->meas_noise, MEAS_NOISE_STDDEV, MEAS_NOISE_MEAN);
 	if (err < 0)
-		return err;
+		goto tracks_free;
 
 	err = kf_init(&ctx->kf, f, h, q, r, b, STATE_SIZE, MEAS_SIZE);
 	if (err < 0)
-		return err;
+		goto rng_free;
 
 	err = engine_run(e);
 	if (err < 0)
-		return err;
-
-	app_destroy(ctx);
+		goto kf_free;
 
 	return 0;
+
+kf_free:
+	kf_destroy(&ctx->kf);
+rng_free:
+	rng_gauss_destroy(&ctx->meas_noise);
+tracks_free:
+	for (u8 i = 0; i < NUM_TRACKS; i++)
+		track_destroy(&ctx->tracks[i]);
+engine_free:
+	engine_destroy(e);
+
+	return err;
 }
 
 void app_destroy(struct app* const ctx)
@@ -157,6 +167,7 @@ void app_destroy(struct app* const ctx)
 
 	rng_gauss_destroy(&ctx->meas_noise);
 	kf_destroy(&ctx->kf);
+	engine_destroy(&ctx->base);
 }
 
 /**** END OF FILE ****/

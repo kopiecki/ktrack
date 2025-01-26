@@ -11,11 +11,7 @@
 #ifndef ENGINE_H_INCLUDED_
 #define ENGINE_H_INCLUDED_
 
-#include <SDL2/SDL.h>
-#include <stdbool.h>
-#include <stdint.h>
-
-#include "engine/common.h"
+#include "engine/rect.h"
 #include "engine/text.h"
 
 /**
@@ -60,7 +56,7 @@ int engine_init(
 	struct engine* const e,
 	const char* name,
 	struct vec2 size,
-	const SDL_Color* const bg_col,
+	SDL_Color bg_col,
 	u32 frame_delay_msec,
 	const struct engine_ops* const ops);
 
@@ -73,7 +69,6 @@ void engine_destroy(struct engine* const e);
 
 /**
  * @brief      Run event/render loop
- * @details    On exiting loop, engine destroys himself
  *
  * @param[in] e    Instance pointer
  * @return int     0 on sucess, negative error code otherwise

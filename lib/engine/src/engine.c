@@ -11,6 +11,8 @@
 #include "engine/engine.h"
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_video.h>
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
@@ -18,9 +20,6 @@
 #include <stdatomic.h>
 
 #include "engine/sig_handler.h"
-
-#define UNUSED(v)     (void)(v)
-#define ARR_SIZE(arr) (int)(sizeof((arr)) / sizeof((arr)[0]))
 
 static const int sigs[] = { SIGINT, SIGTERM };
 static atomic_bool quit = false;
@@ -129,19 +128,22 @@ int engine_init(
 	struct engine* const e,
 	const char* const name,
 	struct vec2 size,
-	const SDL_Color* const bg_col,
+	SDL_Color bg_col,
 	u32 frame_delay_msec,
 	const struct engine_ops* const ops)
 {
 	assert(name != NULL);
 
+	if (ops == NULL)
+		return -ENODATA;
+
 	int err = SDL_Init(SDL_INIT_VIDEO);
 	if (err < 0)
-		return err;
+		goto backend_fail;
 
 	err = TTF_Init();
 	if (err < 0)
-		return err;
+		goto backend_fail;
 
 	e->win = SDL_CreateWindow(
 		name,
@@ -150,35 +152,45 @@ int engine_init(
 		size.x,
 		size.y,
 		SDL_WINDOW_SHOWN);
-	if (e->win == NULL)
-		return -ENOMEM;
+	if (e->win == NULL) {
+		err = -ENOMEM;
+		goto backend_fail;
+	}
 
 	e->rndr = SDL_CreateRenderer(e->win, -1, SDL_RENDERER_ACCELERATED);
-	if (e->rndr == NULL)
-		return -ENOMEM;
+	if (e->rndr == NULL) {
+		err = -ENOMEM;
+		goto win_free;
+	}
 
 	err = SDL_SetRenderDrawBlendMode(e->rndr, SDL_BLENDMODE_BLEND);
 	if (err < 0)
-		return err;
+		goto rndr_free;
 
 	err = set_render_color(e->rndr, &e->bg_col);
 	if (err < 0)
-		return err;
+		goto rndr_free;
 
 	err = render_clear(e);
 	if (err < 0)
-		return err;
-
-	if (ops == NULL)
-		return -ENODATA;
+		goto rndr_free;
 
 	e->ops              = ops;
-	e->bg_col           = *bg_col;
+	e->bg_col           = bg_col;
 	e->frame_delay_msec = frame_delay_msec;
 
 	SDL_Log("Initialized SDL backend");
 
 	return 0;
+
+rndr_free:
+	SDL_DestroyRenderer(e->rndr);
+win_free:
+	SDL_DestroyWindow(e->win);
+backend_fail:
+	SDL_Quit();
+
+	return err;
 }
 
 void engine_destroy(struct engine* const e)
@@ -242,8 +254,6 @@ int engine_run(struct engine* const e)
 
 		wait(e->frame_delay_msec);
 	}
-
-	engine_destroy(e);
 
 	return 0;
 }

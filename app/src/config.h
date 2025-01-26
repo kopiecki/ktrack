@@ -1,36 +1,62 @@
-/*
- * @file   cfg.h
+/**
+ * @file   config.h
+ * @brief  Configuration file
+ * @author Daniel Kopiecki
+ * @date   2025-01-26
  *
- * SPDX-FileCopyrightText: 2024 Daniel Kopiecki
+ * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef CFG_H_INCLUDED_
-#define CFG_H_INCLUDED_
+#ifndef CONFIG_H_INCLUDED_
+#define CONFIG_H_INCLUDED_
 
-#include <gsl/gsl_matrix.h>
-
-#include "engine/common.h"
-#include "engine/engine.h"
+#include "engine/colors.h"
 #include "track.h"
 
-#define APP_NAME         "ktrack"
+/**
+ * @brief Application name
+ */
+#define APP_NAME "ktrack"
+
+/**
+ * @brief Delay in event/render loop
+ */
 #define FRAME_DELAY_MSEC 25U
 
-static const struct vec2 win_size = { 1000, 1000 };
-static const SDL_Color bg_col     = color_navy;
+/**
+ * @brief Main window size
+ */
+static const struct vec2 win_size = {
+	1000,
+	1000,
+};
 
+/**
+ * @brief Main window background color
+ */
+static const SDL_Color bg_col = color_navy;
+
+/**
+ * @brief Aggregated used font information
+ */
 static const struct font_info hack_regular_25 = {
 	.path = "fonts/Hack-Regular.ttf",
 	.size = 25,
 };
 
+/**
+ * @brief Type of tracks
+ */
 enum track_tp {
-	TRACK_MEAS = 0,
-	TRACK_PRED,
-	NUM_TRACKS,
+	TRACK_MEAS = 0, /**< Measurement track */
+	TRACK_PRED,     /**< Prediction track*/
+	NUM_TRACKS,     /**< Enum guard*/
 };
 
+/**
+ * @brief Tracks configuration
+ */
 static const struct track_cfg track_cfgs[] = {
 	[TRACK_MEAS] = {
 		.name        = "measurement",
@@ -50,9 +76,15 @@ static const struct track_cfg track_cfgs[] = {
 	},
 };
 
-#define NOISE_STDDEV 20.0
+/**
+ * @brief Measurement noise standard deviation
+ */
+#define MEAS_NOISE_STDDEV 20.0
 
-#define NOISE_MEAN 0.0
+/**
+ * @brief Measurement noise mean
+ */
+#define MEAS_NOISE_MEAN 0.0
 
 /**
  * @brief Number of states (x vector size)
@@ -114,6 +146,6 @@ static const double b[] = {
 
 // clang-format on
 
-#endif /* CFG_H_INCLUDED_ */
+#endif /* CONFIG_H_INCLUDED_ */
 
 /**** END OF FILE ****/
