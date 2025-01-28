@@ -1,11 +1,11 @@
 /**
  * @file   rng.h
- * @brief  Random number generator with gaussian (normal) distribution
- * @author Daniel Kopiecki
- * @date   2025-01-25
+ * @brief  Random number generator with gaussian distribution
+ * @author Daniel Kopiecki <daniel.kopiecki@protonmail.com>
+ * @date   2025-01-28
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
- * SPDX-License-Identifier: MIT
+ * @copyright Copyright (c) 2025 Daniel Kopiecki
+ * @par       License: MIT
  */
 
 #ifndef RNG_H_INCLUDED_

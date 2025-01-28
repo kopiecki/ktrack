@@ -1,11 +1,11 @@
 /**
  * @file   circ_buf.c
  * @brief  Trivial circural buffer implementation
- * @author Daniel Kopiecki
- * @date   2025-01-25
+ * @author Daniel Kopiecki <daniel.kopiecki@protonmail.com>
+ * @date   2025-01-28
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
- * SPDX-License-Identifier: MIT
+ * @copyright Copyright (c) 2025 Daniel Kopiecki
+ * @par       License: MIT
  */
 
 #include "circ_buf.h"

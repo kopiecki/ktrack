@@ -1,11 +1,11 @@
 /**
  * @file   track.c
  * @brief  Track representation
- * @author Daniel Kopiecki
- * @date   2025-01-26
+ * @author Daniel Kopiecki <daniel.kopiecki@protonmail.com>
+ * @date   2025-01-28
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
- * SPDX-License-Identifier: MIT
+ * @copyright Copyright (c) 2025 Daniel Kopiecki
+ * @par       License: MIT
  */
 
 #include "track.h"
@@ -65,6 +65,9 @@ void track_destroy(struct track* const tr)
 
 int track_draw(struct track* const tr, struct engine* const e)
 {
+	assert(tr != NULL);
+	assert(e != NULL);
+
 	const size_t size = circ_buf_curr_size(&tr->cbuf);
 	struct vec2 pos   = circ_buf_get(&tr->cbuf, 0);
 	int err           = 0;
@@ -82,6 +85,9 @@ int track_draw(struct track* const tr, struct engine* const e)
 
 int track_report(struct track* const tr, struct engine* const e)
 {
+	assert(tr != NULL);
+	assert(e != NULL);
+
 	const struct vec2 last = circ_buf_last(&tr->cbuf);
 
 	const int err =

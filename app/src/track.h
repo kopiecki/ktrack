@@ -1,11 +1,11 @@
 /**
  * @file   track.h
  * @brief  Track representation
- * @author Daniel Kopiecki
- * @date   2025-01-26
+ * @author Daniel Kopiecki <daniel.kopiecki@protonmail.com>
+ * @date   2025-01-28
  *
- * SPDX-FileCopyrightText: 2025 Daniel Kopiecki <daniel.kopiecki@protonmail.com>
- * SPDX-License-Identifier: MIT
+ * @copyright Copyright (c) 2025 Daniel Kopiecki
+ * @par       License: MIT
  */
 
 #ifndef TRACK_H_INCLUDED_
