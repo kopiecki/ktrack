@@ -22,6 +22,7 @@ make
 Debug build:
 ```console
 make debug=y
+```
 
 Documentation:
 ```console
@@ -36,8 +37,8 @@ make run
 
 ## Configuration
 
-Game is mostly configured by constants in `app/src/config.h`. You can change
-some stuff there and recompile the program to see results.
+Application is mostly configured by constants in `app/src/config.h`. You can
+change some stuff there and recompile the program to see results.
 
 ## References
-Here's a (great article)[https://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/] about Kalman filter.
+Here's a [great article](https://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/) about Kalman filter.
